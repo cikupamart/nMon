@@ -18,6 +18,7 @@
                         <li <?php if ($section == "") echo 'class="active"'; ?> ><a href="#general" data-toggle="tab"><?php _e('General'); ?></a></li>
 						<li <?php if ($section == "monitoring") echo 'class="active"'; ?> ><a href="#monitoring" data-toggle="tab"><?php _e('Monitoring'); ?></a></li>
 						<li <?php if ($section == "localisation") echo 'class="active"'; ?> ><a href="#localisation" data-toggle="tab"><?php _e('Localisation'); ?></a></li>
+						<li <?php if ($section == "telegram") echo 'class="active"'; ?> ><a href="#telegram" data-toggle="tab"><?php _e('Telegram'); ?></a></li>
                         <li <?php if ($section == "email") echo 'class="active"'; ?> ><a href="#email" data-toggle="tab"><?php _e('Email'); ?></a></li>
 						<li <?php if ($section == "sms") echo 'class="active"'; ?> ><a href="#sms" data-toggle="tab"><?php _e('SMS Gateway'); ?></a></li>
 						<li <?php if ($section == "twitter") echo 'class="active"'; ?> ><a href="#twitter" data-toggle="tab"><?php _e('Twitter'); ?></a></li>
@@ -226,6 +227,32 @@
 
 						</div><!-- /.tab-pane -->
 
+						<div class="tab-pane <?php if ($section == "telegram") echo 'active'; ?>" id="telegram">
+							<form role="form" action="" method="post" id="telegramSettingsForm">
+
+								<div class="form-group">
+									<label for="telegram_bot_token" class="control-label"><?php _e('Telegram Bot Token'); ?></label>
+									<input class="form-control" id="telegram_bot_token" value="<?php echo getConfigValue("telegram_bot_token"); ?>" placeholder="<?php _e('Telegram Bot Token'); ?>" type="text" name="telegram_bot_token" required>
+									<p class="help-block"><?php _e('Ex: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11'); ?></p>
+								</div>
+
+								<div class="form-group">
+									<label for="telegram_chat_id" class="control-label"><?php _e('Telegram Chat ID'); ?></label>
+									<input class="form-control" id="telegram_chat_id" value="<?php echo getConfigValue("telegram_chat_id"); ?>" placeholder="<?php _e('Telegram Chat ID'); ?>" type="text" name="telegram_chat_id" required>
+									<p class="help-block"><?php _e('Add multiple IDs separated by commas. Ex: 341245,567312,353222'); ?></p>
+								</div>
+
+								<div class="form-group">
+									<div class="pull-right" style="margin:10px 0px;"><button type='submit' class="btn btn-flat btn-success"><?php _e('Save Changes'); ?></button></div>
+								</div>
+
+								<div style="clear:both;"></div>
+								<input type="hidden" name="action" value="telegramSettings">
+								<input type="hidden" name="route" value="system/settings">
+								<input type="hidden" name="section" value="telegram">
+							</form>
+                        </div><!-- /.tab-pane -->
+
                         <div class="tab-pane <?php if ($section == "email") echo 'active'; ?>" id="email">
 							<form role="form" action="" method="post" id="emailSettingsForm">
 								<div class="form-group">
@@ -300,29 +327,31 @@
 											<option <?php if(getConfigValue("sms_provider") == "smsglobal") echo 'selected'; ?> value="smsglobal">SMS Global</option>
 											<option <?php if(getConfigValue("sms_provider") == "twilio") echo 'selected'; ?> value="twilio">Twilio</option>
 											<option <?php if(getConfigValue("sms_provider") == "1s2u") echo 'selected'; ?> value="1s2u">1s2u</option>
+											<option <?php if(getConfigValue("sms_provider") == "messagebird") echo 'selected'; ?> value="messagebird">MessageBird</option>
 										</select>
 
 								</div>
 
 								<div class="form-group">
 									<label for="sms_user" class="control-label"><?php _e('Username/Account SID'); ?></label>
-									<input class="form-control" id="sms_user" value="<?php echo getConfigValue("sms_user"); ?>" placeholder="SMS API Username/Account SID" type="text" name="sms_user">
+									<input class="form-control" id="sms_user" value="<?php echo getConfigValue("sms_user"); ?>" type="text" name="sms_user">
 								</div>
 								<div class="form-group">
-									<label for="sms_password" class="control-label"><?php _e('Password/Auth Token'); ?></label>
-									<input class="form-control" id="sms_password" value="<?php echo getConfigValue("sms_password"); ?>" placeholder="SMS API Password/Auth Token" type="password" name="sms_password">
+									<label for="sms_password" class="control-label"><?php _e('Password/Auth Token/Access Key'); ?></label>
+									<input class="form-control" id="sms_password" value="<?php echo getConfigValue("sms_password"); ?>" type="password" name="sms_password">
 								</div>
 
 
 								<div class="form-group">
 									<label for="sms_api_id" class="control-label"><?php _e('API ID'); ?></label>
-									<input class="form-control" id="sms_api_id" value="<?php echo getConfigValue("sms_api_id"); ?>" placeholder="API ID" type="text" name="sms_api_id">
+									<input class="form-control" id="sms_api_id" value="<?php echo getConfigValue("sms_api_id"); ?>" type="text" name="sms_api_id">
 									<p class="help-block"><?php _e('Only for Clickatell'); ?></p>
 								</div>
+
 								<div class="form-group">
-									<label for="sms_from" class="control-label"><?php _e('From Name/Number'); ?></label>
-									<input class="form-control" id="sms_from" value="<?php echo getConfigValue("sms_from"); ?>" placeholder="From Name/Number" type="text" name="sms_from">
-									<p class="help-block"><?php _e('For SMS Global, Twillio and 1s2u'); ?></p>
+									<label for="sms_from" class="control-label"><?php _e('From Name/Number/Originator'); ?></label>
+									<input class="form-control" id="sms_from" value="<?php echo getConfigValue("sms_from"); ?>" type="text" name="sms_from">
+									<p class="help-block"><?php _e('For SMS Global, Twillio, 1s2u and Messagebird'); ?></p>
 								</div>
 
 								<div class="form-group">
@@ -401,7 +430,7 @@
 
 								<h3>Alerts</h3>
 								<a onClick='showM("?modal=notifications/edit&id=3&reroute=system/settings&section=templates");return false' data-toggle="modal" class="btn btn-flat btn-primary btn-sm"><?php _e('nMon Incident Alert'); ?></a>
-
+								<a onClick='showM("?modal=notifications/edit&id=3&reroute=system/settings&section=templates");return false' data-toggle="modal" class="btn btn-flat btn-primary btn-sm"><?php _e('nMon Incident Unresolved'); ?></a>
 							</div>
 							<br>
 

@@ -31,6 +31,17 @@ class Settings extends App {
     	return "30";
     }
 
+	public static function updateOrCreate($name, $value) { //update setting value or create new if not existed
+		global $database;
+		$telegramOptions = $database->select("core_config", "*", ["name" => $name]);
+		if(!empty($telegramOptions)) {
+			$database->update("core_config", ["value" => $value], ["name" => $name]);
+			return 40;
+		}
+		$database->insert("core_config", ["value" => $value, "name" => $name]);
+		return 40;
+	}
+
 
 
 

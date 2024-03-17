@@ -47,6 +47,11 @@ switch($_POST['action']) {
 		isAuthorized("editServer"); $status = Server::markIncident($_POST['id']);
 	break;
 
+    case "editServerIncidentComment":
+		isAuthorized("editServer"); $status = Server::editComment($_POST);
+	break;
+
+
 
 	// websites
 	case "addWebsite":
@@ -78,6 +83,10 @@ switch($_POST['action']) {
 		isAuthorized("editWebsite"); $status = Website::markIncident($_POST['id']);
 	break;
 
+    case "editWebsiteIncidentComment":
+		isAuthorized("editWebsite"); $status = Website::editComment($_POST);
+	break;
+
 
 	// checks
 	case "addCheck":
@@ -107,6 +116,10 @@ switch($_POST['action']) {
 
 	case "markCheckIncident":
 		isAuthorized("editCheck"); $status = Check::markIncident($_POST['id']);
+	break;
+
+    case "editCheckIncidentComment":
+		isAuthorized("editCheck"); $status = Check::editComment($_POST);
 	break;
 
 
@@ -293,6 +306,13 @@ switch($_POST['action']) {
 	case "editNotification":
 		isAuthorized("manageSettings"); $status = Settings::editNotification($_POST);
     break;
+
+	case "telegramSettings":
+		isAuthorized("manageSettings");
+		Settings::updateOrCreate("telegram_bot_token", $_POST['telegram_bot_token']);
+		Settings::updateOrCreate("telegram_chat_id", $_POST['telegram_chat_id']);
+		$status = 40;
+	break;
 
 }
 
