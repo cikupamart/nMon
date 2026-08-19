@@ -55,7 +55,7 @@ services:
       mongodb:
         condition: service_healthy
 
-  # Frontend Dashboard
+  # Frontend Dashboard (Nginx-based)
   frontend:
     build:
       context: ./frontend
@@ -68,25 +68,6 @@ services:
       - nmon-network
     depends_on:
       - server
-
-  # Nginx Reverse Proxy (Optional - for production)
-  nginx:
-    image: nginx:alpine
-    container_name: nmon-nginx
-    restart: unless-stopped
-    ports:
-      - "${NGINX_PORT:-443}:443"
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-    networks:
-      - nmon-network
-    depends_on:
-      - server
-      - frontend
-    profiles:
-      - production
 
 volumes:
   mongodb_data:

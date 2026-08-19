@@ -1,7 +1,7 @@
 import { TelegramNotifier, createTelegramNotifier } from './telegram';
 import { EmailNotifier, createEmailNotifier } from './email';
-import { Alert } from '../../models/Alert';
-import { Agent } from '../../models/Agent';
+import { IAlert } from '../../models/Alert';
+import { IAgent } from '../../models/Agent';
 
 export interface NotificationChannel {
   name: string;
@@ -44,7 +44,7 @@ export class NotificationService {
     console.log(`📢 Notification channels: ${Array.from(this.channels.keys()).join(', ') || 'none'}`);
   }
 
-  async sendAlert(alert: Alert, agent: Agent, recipients?: string[]): Promise<void> {
+  async sendAlert(alert: IAlert, agent: IAgent, recipients?: string[]): Promise<void> {
     const agentName = agent.name || agent.hostname;
     const agentIp = agent.metrics?.network?.[0]?.ip;
 
@@ -77,8 +77,8 @@ export class NotificationService {
 
   async sendIncident(
     type: 'opened' | 'resolved',
-    alert: Alert,
-    agent: Agent,
+    alert: IAlert,
+    agent: IAgent,
     duration?: string,
     recipients?: string[]
   ): Promise<void> {
@@ -109,6 +109,10 @@ export class NotificationService {
   }
 
   async sendDailySummary(): Promise<void> {
+    // Dynamic import to avoid circular dependency
+    const { Agent } = await import('../../models/Agent');
+    const { Alert } = await import('../../models/Alert');
+    
     const totalAgents = await Agent.countDocuments();
     const onlineAgents = await Agent.countDocuments({ status: 'online' });
     
@@ -136,10 +140,10 @@ export class NotificationService {
 
     // Send via Email to all configured recipients
     if (this.email) {
-      const recipients = this.getDailySummaryRecipients();
-      if (recipients.length > 0) {
+      const emailRecipients = this.getDailySummaryRecipients();
+      if (emailRecipients.length > 0) {
         await this.email.sendEmail({
-          to: recipients,
+          to: emailRecipients,
           subject: `[nMon] Daily Summary - ${new Date().toLocaleDateString()}`,
           html: this.generateDailySummaryHTML({
             totalAgents,
@@ -152,9 +156,9 @@ export class NotificationService {
     }
   }
 
-  private shouldNotify(channel: string, agent: Agent): boolean {
+  private shouldNotify(channel: string, agent: IAgent): boolean {
     // Check agent-specific notification preferences
-    const prefs = agent.get('notificationPreferences') as NotificationPreferences;
+    const prefs = agent.get('notificationPreferences') as NotificationPreferences | null;
     if (prefs && prefs.enabled === false) {
       return false;
     }
