@@ -1,9 +1,55 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { Agent } from '../models/Agent';
 import { MetricsHistory } from '../models/MetricsHistory';
 import { Alert } from '../models/Alert';
 
 const router = Router();
+
+// =====================
+// Static routes MUST come before /:id
+// =====================
+
+// Get dashboard stats
+router.get('/stats/overview', async (req: Request, res: Response) => {
+  try {
+    const totalAgents = await Agent.countDocuments();
+    const onlineAgents = await Agent.countDocuments({ status: 'online' });
+    const warningAgents = await Agent.countDocuments({ status: 'warning' });
+    const criticalAgents = await Agent.countDocuments({ status: 'critical' });
+    const offlineAgents = await Agent.countDocuments({ status: 'offline' });
+    const activeAlerts = await Alert.countDocuments({ status: 'active' });
+
+    res.json({
+      totalAgents,
+      onlineAgents,
+      warningAgents,
+      criticalAgents,
+      offlineAgents,
+      activeAlerts
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// Get all agents on map (for live map feature)
+router.get('/map/all', async (req: Request, res: Response) => {
+  try {
+    const agents = await Agent.find({
+      'location.lat': { $ne: 0 },
+      'location.lng': { $ne: 0 }
+    }).select('name hostname status location type metrics.cpu metrics.memory metrics.uptime lastSeen');
+
+    res.json(agents);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch map data' });
+  }
+});
+
+// =====================
+// CRUD routes
+// =====================
 
 // Get all agents
 router.get('/', async (req: Request, res: Response) => {
@@ -24,6 +70,52 @@ router.get('/', async (req: Request, res: Response) => {
     res.json(agents);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch agents' });
+  }
+});
+
+// Create new agent manually
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const { name, hostname, type, group, location, tags, notes } = req.body;
+
+    // Validation
+    if (!name || !hostname) {
+      return res.status(400).json({ error: 'Name and hostname are required' });
+    }
+
+    // Check duplicate hostname
+    const existing = await Agent.findOne({ hostname });
+    if (existing) {
+      return res.status(409).json({ error: 'An agent with this hostname already exists' });
+    }
+
+    // Generate unique server key
+    const serverKey = `nmon-${crypto.randomBytes(24).toString('hex')}`;
+
+    const agent = await Agent.create({
+      serverKey,
+      name,
+      hostname,
+      type: type || 'linux',
+      group: group || 'default',
+      location: location || { name: '', lat: 0, lng: 0 },
+      status: 'offline',
+      tags: tags || [],
+      notes: notes || ''
+    });
+
+    res.status(201).json({
+      agent,
+      message: 'Agent created successfully',
+      installCommand: generateInstallCommand(agent),
+      serverKey: agent.serverKey
+    });
+  } catch (error: any) {
+    console.error('Failed to create agent:', error);
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'Agent with this hostname already exists' });
+    }
+    res.status(500).json({ error: 'Failed to create agent' });
   }
 });
 
@@ -146,42 +238,34 @@ router.get('/:id/alerts', async (req: Request, res: Response) => {
   }
 });
 
-// Get all agents on map (for live map feature)
-router.get('/map/all', async (req: Request, res: Response) => {
+// Regenerate server key for an agent
+router.post('/:id/regenerate-key', async (req: Request, res: Response) => {
   try {
-    const agents = await Agent.find({
-      'location.lat': { $ne: 0 },
-      'location.lng': { $ne: 0 }
-    }).select('name hostname status location type metrics.cpu metrics.memory metrics.uptime lastSeen');
+    const agent = await Agent.findById(req.params.id);
+    if (!agent) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
 
-    res.json(agents);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch map data' });
-  }
-});
-
-// Get dashboard stats
-router.get('/stats/overview', async (req: Request, res: Response) => {
-  try {
-    const totalAgents = await Agent.countDocuments();
-    const onlineAgents = await Agent.countDocuments({ status: 'online' });
-    const warningAgents = await Agent.countDocuments({ status: 'warning' });
-    const criticalAgents = await Agent.countDocuments({ status: 'critical' });
-    const offlineAgents = await Agent.countDocuments({ status: 'offline' });
-
-    const activeAlerts = await Alert.countDocuments({ status: 'active' });
+    agent.serverKey = `nmon-${crypto.randomBytes(24).toString('hex')}`;
+    await agent.save();
 
     res.json({
-      totalAgents,
-      onlineAgents,
-      warningAgents,
-      criticalAgents,
-      offlineAgents,
-      activeAlerts
+      message: 'Server key regenerated',
+      serverKey: agent.serverKey,
+      installCommand: generateInstallCommand(agent)
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch stats' });
+    res.status(500).json({ error: 'Failed to regenerate key' });
   }
 });
+
+// =====================
+// Helper functions
+// =====================
+
+function generateInstallCommand(agent: any): string {
+  const gateway = process.env.AGENT_GATEWAY || 'http://localhost:3000';
+  return `curl -sSL ${gateway}/api/agents/${agent._id}/install.sh | bash -s -- --key "${agent.serverKey}" --gateway "${gateway}"`;
+}
 
 export { router as agentRoutes };
