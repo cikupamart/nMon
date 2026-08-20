@@ -12,10 +12,9 @@ if($debug == false) {
 }
 
 if($debug == true) {
-    error_reporting(E_ALL & ~E_NOTICE);
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
     ini_set('display_errors', '1');
 }
-
 
 
 ##################################
@@ -33,32 +32,27 @@ $start_time = $time;
 
 $scriptpath = __DIR__;
 
-
 ##################################
 ###         APP LOADER         ###
 ##################################
 
 require($scriptpath . '/includes/loader.php');
 
+// Generate CSRF token for forms
+$csrf_token = generateCSRFToken();
 
 ##################################
 ###        MODAL LOADER        ###
 ##################################
 
 if(isset($_GET['modal'])) {
-    require($scriptpath . '/template/modals/' .  $_GET['modal'] . '.php');
+    // Sanitize modal parameter
+    $modal = preg_replace('/[^a-zA-Z0-9\/_-]/', '', $_GET['modal']);
+    $modalFile = $scriptpath . '/template/modals/' . $modal . '.php';
+    if (file_exists($modalFile)) {
+        require($modalFile);
+    }
 }
-
-
-##################################
-###         END     TIME       ###
-##################################
-
-$time = microtime();
-$time = explode(' ', $time);
-$time = $time[1] + $time[0];
-$finish = $time;
-$total_time = round(($finish - $start_time), 4);
 
 
 ##################################
@@ -68,7 +62,7 @@ $total_time = round(($finish - $start_time), 4);
 // load the page if no modal or quick action was requested
 if( !isset($_GET['modal']) && !isset($_GET['qa']) && !isset($_GET['json']) ) {
 
-    // exclude header and footer for login and forgot password page
+    // Exclude header and footer for login and forgot password page
     if($route == "signin" || $route == "forgot" || $route == "publicpage") {
         require($scriptpath . '/template/' . $route . '.php');
     }
@@ -80,7 +74,6 @@ if( !isset($_GET['modal']) && !isset($_GET['qa']) && !isset($_GET['json']) ) {
     }
 
 }
-
 
 
 ?>

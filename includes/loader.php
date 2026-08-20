@@ -34,10 +34,12 @@ require $scriptpath . '/vendor/autoload.php';
 $database = new medoo($config);
 
 ### START THE SESSION ###
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 ### DATE & TIME ###
-date_default_timezone_set(getConfigValue("timezone"));
+date_default_timezone_set(getConfigValue("timezone") ?? 'UTC');
 $datetime = date("Y-m-d H:i:s");
 $date = date("Y-m-d");
 
@@ -45,9 +47,16 @@ $date = date("Y-m-d");
 ### XSS FILTERING ###
 $xss_filtering = getConfigValue("xss_filtering");
 if($xss_filtering == "true") {
-    $_GET = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
+    // Use FILTER_SANITIZE_FULL_SPECIAL_CHARS instead of deprecated FILTER_SANITIZE_STRING
+    if (isset($_GET)) {
+        foreach ($_GET as $key => $value) {
+            $_GET[$key] = is_string($value) ? htmlspecialchars($value, ENT_QUOTES, 'UTF-8') : $value;
+        }
+    }
     $security = new Security();
-    $_POST = $security->xss_clean($_POST);
+    if (isset($_POST)) {
+        $_POST = $security->xss_clean($_POST);
+    }
 }
 
 ### GET PAGE ROUTE (DEFAULTS TO DASHBOARD IF NOT SET) ###
@@ -59,7 +68,8 @@ if (isset($_GET['section'])) $section = $_GET['section']; else $section = "";
 ### LOAD STATUS MESSAGE FOR DISPLAY AND CLEAR IT ###
 if (!empty($_SESSION['statuscode'])) {
     $statuscode = $_SESSION['statuscode'];
-    $status = array(); $statusmessage = $database->get("core_statuses", "*", ["code" => $statuscode]);
+    $status = array();
+    $statusmessage = $database->get("core_statuses", "*", ["code" => $statuscode]);
     clearStatus();
 }
 
@@ -69,11 +79,15 @@ if ($route != "signin" && $route != "forgot" && $route != "publicpage") isSigned
 ### INITIALIZE LOGGED IN USER (LIU) ARRAY & PERMISSIONS ###
 if ($route != "signin" && $route != "forgot" && $route != "publicpage") {
     $liu = $database->get("core_users", "*", ["sessionid" => session_id() ]);
-    $perms = unserialize(getSingleValue("core_roles","perms",$liu['roleid']));
-    $liu_groups = unserialize($liu['groups']);
-    if(in_array("0", $liu_groups)) $liu_groups = getGroupsArray();
-
-    $isAdmin = true;
+    if ($liu) {
+        $perms = unserialize(getSingleValue("core_roles","perms",$liu['roleid']));
+        $liu_groups = unserialize($liu['groups']);
+        if(in_array("0", $liu_groups)) $liu_groups = getGroupsArray();
+        $isAdmin = true;
+    } else {
+        header("Location:?route=signin");
+        exit;
+    }
 }
 
 ### GOOGLE MAPS ###

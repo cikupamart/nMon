@@ -1,6 +1,5 @@
 <?php
-// ----------------------------------------------------------------------------------------------
-// GENERAL FUNCTIONS
+// ----------------------------------------------------------------------------------------------\n// GENERAL FUNCTIONS
 
 function randomString($chars=10) { //generate random string
 	$characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -52,6 +51,7 @@ function curlReturn($url) { //get url with curl
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible;)");
 	curl_setopt($ch,CURLOPT_URL, $url);
+	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 	$result = curl_exec($ch);
 	curl_close($ch);
 	return $result;
@@ -63,17 +63,15 @@ function rand_color() { //generate random color
 
 function ttruncat($text,$numb=30) { //truncate text
 	if (strlen($text) > $numb) {
-	  	$text = substr($text, 0, $numb);
-	  	$text = substr($text,0,strrpos($text," "));
-	  	$etc = " ...";
-	  	$text = $text.$etc;
+	 	$text = substr($text, 0, $numb);
+	 	$text = substr($text,0,strrpos($text," "));
+	 	$etc = " ...";
+	 	$text = $text.$etc;
 	  }
 	return $text;
 }
 
 function smartDate($timestamp) {
-
-
 
 	if($timestamp == "") return __('Never');
 
@@ -105,7 +103,7 @@ function smartDate($timestamp) {
 }
 
 function escapeJavaScriptText($string) {
-    return str_replace("\n", '\n', str_replace('"', '\"', addcslashes(str_replace("\r", '', (string)$string), "\0..\37'\\")));
+    return str_replace("\\n", '\\n', str_replace('"', '\\\"', addcslashes(str_replace("\\r", '', (string)$string), "\\0..\\37'\\\\")));
 }
 
 
@@ -127,9 +125,7 @@ function formatBytes($bytes, $precision = 2) {
     $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
     $pow = min($pow, count($units) - 1);
 
-    // Uncomment one of the following alternatives
-    // $bytes /= pow(1024, $pow);
-     $bytes /= (1 << (10 * $pow));
+    $bytes /= (1 << (10 * $pow));
 
     return round($bytes, $precision) . ' ' . $units[$pow];
 }
@@ -148,8 +144,75 @@ function is_decimal( $val )
     return is_numeric( $val ) && floor( $val ) != $val;
 }
 
-// ----------------------------------------------------------------------------------------------
-// GENERAL DATABASE FUNCTIONS
+
+// ----------------------------------------------------------------------------------------------\n// CSRF TOKEN FUNCTIONS
+
+function generateCSRFToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function csrfField() {
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(generateCSRFToken()) . '">';
+}
+
+function verifyCSRFToken() {
+    if (empty($_POST['csrf_token']) || empty($_SESSION['csrf_token'])) {
+        return false;
+    }
+    return hash_equals($_SESSION['csrf_token'], $_POST['csrf_token']);
+}
+
+function requireCSRF() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!verifyCSRFToken()) {
+            http_response_code(403);
+            die('Invalid CSRF token');
+        }
+    }
+}
+
+
+// ----------------------------------------------------------------------------------------------\n// INPUT SANITIZATION FUNCTIONS
+
+function sanitizeInput($data) {
+    if (is_array($data)) {
+        return array_map('sanitizeInput', $data);
+    }
+    return htmlspecialchars(trim($data), ENT_QUOTES, 'UTF-8');
+}
+
+function sanitizeEmail($email) {
+    $email = strtolower(trim($email));
+    return filter_var($email, FILTER_SANITIZE_EMAIL);
+}
+
+function sanitizeInt($value) {
+    return filter_var($value, FILTER_SANITIZE_NUMBER_INT);
+}
+
+function sanitizeFloat($value) {
+    return filter_var($value, FILTER_VALIDATE_FLOAT);
+}
+
+
+// ----------------------------------------------------------------------------------------------\n// SECURITY FUNCTIONS
+
+function secureHeaders() {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+}
+
+function isHTTPS() {
+    return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443;
+}
+
+
+// ----------------------------------------------------------------------------------------------\n// GENERAL DATABASE FUNCTIONS
 
 function getRowById($table,$id) { //return associative array from one row by id
 	global $database;
@@ -204,8 +267,7 @@ function deleteRowById($table,$id) { //detete row(s) by id
 }
 
 
-// ----------------------------------------------------------------------------------------------
-// DATE FUNCTIONS
+// ----------------------------------------------------------------------------------------------\n// DATE FUNCTIONS
 
 
 function phpFormat() {
@@ -243,8 +305,7 @@ function dateDb($date) {
 	else return "";
 }
 
-// ----------------------------------------------------------------------------------------------
-// NAVIGATION
+// ----------------------------------------------------------------------------------------------\n// NAVIGATION
 
 function reroute($data,$status=0) {
 	$location = "Location:?route=" . $data['route'];
@@ -263,8 +324,7 @@ function clearStatus() {
 }
 
 
-// ----------------------------------------------------------------------------------------------
-// CLASS LOADERS
+// ----------------------------------------------------------------------------------------------\n// CLASS LOADERS
 
 function vendorClassAutoload($classname) {
 	global $scriptpath;
@@ -279,8 +339,7 @@ function appClassAutoload($classname) {
 }
 
 
-// ----------------------------------------------------------------------------------------------
-// TEXT OUTPUT
+// ----------------------------------------------------------------------------------------------\n// TEXT OUTPUT
 
 function __($text) {
 	global $t;
@@ -301,34 +360,67 @@ function _x($sg,$pl,$count) {
 	}
 }
 
-// ----------------------------------------------------------------------------------------------
-// AUTHENTICATION FUNCTIONS
+
+// ----------------------------------------------------------------------------------------------\n// PASSWORD FUNCTIONS (Using modern password_hash)
+
+function hashPassword($password) {
+    return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+}
+
+function verifyPassword($password, $hash) {
+    return password_verify($password, $hash);
+}
+
+function needsRehash($hash) {
+    return password_needs_rehash($hash, PASSWORD_BCRYPT, ['cost' => 12]);
+}
+
+
+// ----------------------------------------------------------------------------------------------\n// AUTHENTICATION FUNCTIONS
 
 function signIn($email,$password) { //login and set session
 	global $database;
-	$email = strtolower($email);
-	$people = $database->count("core_users",["AND" => ["email" => $email,"password" => sha1($password)]]);
+	$email = strtolower(trim($email));
 
-	if ($people == "1") {
-		//session_start();
-		$sessionid = session_id();
-		$database->update("core_users", ["sessionid" => $sessionid], ["email" => $email]);
-		$people = $database->get("core_users","*",["email" => $email]);
-		logSystem("User Logged In - ID: " . $people['id']);
-		header("Location:?route=dashboard");
-		exit;
+	// Get user by email
+	$person = $database->get("core_users", "*", ["email" => $email]);
+
+	if ($person) {
+		// Support both old SHA1 and new bcrypt hashes
+		$passwordValid = false;
+
+		if (strlen($person['password']) === 60 && substr($person['password'], 0, 4) === '$2y$') {
+			// Modern bcrypt hash
+			$passwordValid = verifyPassword($password, $person['password']);
+		} else {
+			// Legacy SHA1 hash - migrate to bcrypt on successful login
+			if ($person['password'] === sha1($password)) {
+				$passwordValid = true;
+				// Migrate to bcrypt
+				$newHash = hashPassword($password);
+				$database->update("core_users", ["password" => $newHash], ["id" => $person['id']]);
+				logSystem("Password migrated to bcrypt - User ID: " . $person['id']);
+			}
+		}
+
+		if ($passwordValid) {
+			$sessionid = session_id();
+			$database->update("core_users", ["sessionid" => $sessionid], ["email" => $email]);
+			logSystem("User Logged In - ID: " . $person['id']);
+			header("Location:?route=dashboard");
+			exit;
+		}
 	}
-	else {
-		logSystem("User Login Failure - EMAIL: " . $email);
-		setStatus(1200);
-		header("Location:?route=signin");
-		exit;
-	}
+
+	logSystem("User Login Failure - EMAIL: " . $email);
+	setStatus(1200);
+	header("Location:?route=signin");
+	exit;
 }
 
 function resetConfirmation($email) { //set password resetkey and send confirmation email for password reset
 	global $database;
-	$email = strtolower($email);
+	$email = strtolower(trim($email));
 	$count = $database->count("core_users",["email" => $email]);
 
 	if ($count == "1") {
@@ -350,7 +442,9 @@ function resetPassword($resetkey,$password) { //reset password
 
 	if ($count == "1") {
 		$people = $database->get("core_users","*",["resetkey" => $resetkey]);
-		$database->update("core_users", ["password" => sha1($password),"resetkey" => ""], ["resetkey" => $resetkey]);
+		// Use secure password hashing
+		$newPassword = hashPassword($password);
+		$database->update("core_users", ["password" => $newPassword,"resetkey" => ""], ["resetkey" => $resetkey]);
 		logSystem("User Password Reset - ID: " . $people['id']);
 		setStatus(1600);
 		header("Location:?route=login");
@@ -385,8 +479,6 @@ function isAuthorized($action) {
 function checkGroup($groupid) {
 	global $liu_groups;
 
-	//if(in_array("0", $liu_groups)) return TRUE;
-
 	if(in_array($groupid, $liu_groups))
 		return TRUE;
 	else return FALSE;
@@ -396,8 +488,6 @@ function checkGroup($groupid) {
 // returns TRUE OR REDIRECTS with error starus
 function checkGroupRedirect($groupid) {
 	global $liu_groups;
-
-	//if(in_array("0", $liu_groups)) return TRUE;
 
 	if(in_array($groupid, $liu_groups))
 		return TRUE;
@@ -423,8 +513,7 @@ function get_group($table, $itemid) {
 }
 
 
-// ----------------------------------------------------------------------------------------------
-// APP LOGGING FUNCTIONS
+// ----------------------------------------------------------------------------------------------\n// APP LOGGING FUNCTIONS
 
 function logSystem($description) { //add to system log
 	global $liu;
@@ -459,8 +548,7 @@ function logSMS($mobile,$sms) { //add to sms log
 }
 
 
-// ----------------------------------------------------------------------------------------------
-// COMMUNICATIONS FUNCTIONS
+// ----------------------------------------------------------------------------------------------\n// COMMUNICATIONS FUNCTIONS
 
 function sendEmail($to,$subject,$message,$userid="0",$ccs=array()) { //send email
 	$mail = new PHPMailer;
@@ -478,8 +566,6 @@ function sendEmail($to,$subject,$message,$userid="0",$ccs=array()) { //send emai
 			$mail->Realm = getConfigValue("email_smtp_domain");
 		}
 	}
-
-	//$mail->SMTPAutoTLS = false;  // Disable the automatic TLS encryption added in PHPMailer v5.2.10
 
 	$mail->SMTPOptions = array(
 		'ssl' => array(
@@ -520,7 +606,7 @@ function sendSMS($mobile,$sms) { //send sms
 		$returnedData = file_get_contents($url);
 	}
 	if ($provider == "clickatell") {
-		$url = 'http://api.clickatell.com/http/sendmsg?user=' . $user . '&password=' . $password . '&api_id=' . $api_id . '&to=' . $mobile . '&text=' . urlencode($sms);
+		$url = 'https://api.clickatell.com/http/sendmsg?user=' . $user . '&password=' . $password . '&api_id=' . $api_id . '&to=' . $mobile . '&text=' . urlencode($sms);
 		$returnedData = file_get_contents($url);
 	}
 
@@ -553,8 +639,7 @@ function sendSMS($mobile,$sms) { //send sms
 }
 
 
-// ----------------------------------------------------------------------------------------------
-// APP SPECIFIC
+// ----------------------------------------------------------------------------------------------\n// APP SPECIFIC
 
 
 // custom compare
@@ -642,4 +727,101 @@ function dns_bl_lookup($ip) {
 }
 
 
-?>
+// ----------------------------------------------------------------------------------------------\n// RATE LIMITING
+
+function checkRateLimit($key, $maxAttempts = 5, $windowMinutes = 15) {
+    global $database;
+
+    $windowStart = date('Y-m-d H:i:s', strtotime("-{$windowMinutes} minutes"));
+
+    // Clean old attempts
+    $database->delete("core_ratelimit", [
+        "AND" => [
+            "key" => $key,
+            "timestamp[<]" => $windowStart
+        ]
+    ]);
+
+    // Count current attempts
+    $attempts = $database->count("core_ratelimit", [
+        "AND" => [
+            "key" => $key,
+            "timestamp[>=]" => $windowStart
+        ]
+    ]);
+
+    if ($attempts >= $maxAttempts) {
+        return false; // Rate limit exceeded
+    }
+
+    // Log this attempt
+    $database->insert("core_ratelimit", [
+        "key" => $key,
+        "timestamp" => date('Y-m-d H:i:s')
+    ]);
+
+    return true; // Within rate limit
+}
+
+
+// ----------------------------------------------------------------------------------------------\n// LOGGING
+
+function logActivity($action, $details = "") {
+    global $database, $liu;
+
+    $userid = isset($liu['id']) ? $liu['id'] : 0;
+
+    $database->insert("core_activitylog", [
+        "userid" => $userid,
+        "ipaddress" => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        "description" => $action . ($details ? ": " . $details : ""),
+        "timestamp" => date('Y-m-d H:i:s')
+    ]);
+}
+
+
+// ----------------------------------------------------------------------------------------------\n// EMAIL TEMPLATES
+
+function getEmailTemplate($type, $data = []) {
+    $appName = getConfigValue("app_name") ?? "nMon";
+    $appUrl = getConfigValue("app_url") ?? baseURL();
+
+    $templates = [
+        'alert' => [
+            'subject' => $data['subject'] ?? "Alert - {$appName}",
+            'body' => "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background-color: #f44336; color: white; padding: 20px; text-align: center;'>
+                    <h1 style='margin: 0;'>⚠️ {$appName} Alert</h1>
+                </div>
+                <div style='padding: 20px; background-color: #f9f9f9;'>
+                    <p>{$data['message']}</p>
+                    <p><strong>Time:</strong> {$data['time']}</p>
+                    <p><a href='{$appUrl}' style='display: inline-block; padding: 10px 20px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 4px;'>View Dashboard</a></p>
+                </div>
+                <div style='padding: 10px; text-align: center; font-size: 12px; color: #666;'>
+                    © {$appName} - Server Monitoring
+                </div>
+            </div>"
+        ],
+        'welcome' => [
+            'subject' => "Welcome to {$appName}",
+            'body' => "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                <div style='background-color: #4CAF50; color: white; padding: 20px; text-align: center;'>
+                    <h1 style='margin: 0;'>Welcome to {$appName}</h1>
+                </div>
+                <div style='padding: 20px; background-color: #f9f9f9;'>
+                    <p>Hello {$data['name']},</p>
+                    <p>Your account has been created successfully.</p>
+                    <p><a href='{$appUrl}/?route=signin' style='display: inline-block; padding: 10px 20px; background-color: #2196F3; color: white; text-decoration: none; border-radius: 4px;'>Login Now</a></p>
+                </div>
+            </div>"
+        ]
+    ];
+
+    return $templates[$type] ?? null;
+}
+
+
+?>\n
