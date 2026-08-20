@@ -8,10 +8,10 @@
         <link rel="shortcut icon" href="template/assets/icon.png"/>
         <link rel="apple-touch-icon" href="template/assets/icon-large.png"/>
         <link rel="image_src" href="template/assets/icon-large.png"/>
-        <!-- Bootstrap 3.3.7 -->
-		<link href="template/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-        <!-- Font Awesome -->
-        <link rel="stylesheet" href="template/assets/plugins/font-awesome/css/font-awesome.min.css">
+        <!-- Bootstrap 3.4.1 (CDN) -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+        <!-- Font Awesome 4.7 (CDN) -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <!-- Ionicons -->
         <link rel="stylesheet" href="template/assets/plugins/ionicons/css/ionicons.min.css">
         <!-- DataTables -->
@@ -41,8 +41,8 @@
         <!-- CUSTOM CSS -->
 		<link href="template/assets/custom.css" rel="stylesheet" type="text/css" />
 
-        <!-- jQuery 2.2.3 -->
-		<script src="template/assets/plugins/jQuery/jquery-2.2.3.min.js"></script>
+        <!-- jQuery 3.7.1 (CDN) -->
+		<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     </head>
 
 

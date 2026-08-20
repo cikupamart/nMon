@@ -22,8 +22,8 @@
         <?php } ?>
 
 
-        <!-- Bootstrap 3.3.7 -->
-		<link href="template/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+        <!-- Bootstrap 3.4.1 (CDN with security fixes) -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
         <!-- Font Awesome -->
         <link rel="stylesheet" href="template/assets/plugins/font-awesome/css/font-awesome.min.css">
         <!-- Ionicons -->
@@ -55,8 +55,8 @@
         <!-- CUSTOM CSS -->
 		<link href="template/assets/custom.css" rel="stylesheet" type="text/css" />
 
-        <!-- jQuery 2.2.3 -->
-		<script src="template/assets/plugins/jQuery/jquery-2.2.3.min.js"></script>
+        <!-- jQuery 3.7.1 (CDN) -->
+		<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
         <!-- DataTables -->
         <script src="template/assets/plugins/datatables/datatables.min.js"></script>

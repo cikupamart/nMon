@@ -20,10 +20,10 @@
         <?php } ?>
 
 
-        <!-- Bootstrap 3.3.5 -->
-		    <link href="template/assets/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
-        <!-- Font Awesome -->
-        <link href="template/assets/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+        <!-- Bootstrap 3.4.1 (CDN) -->
+		    <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+        <!-- Font Awesome 4.7 (CDN) -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
         <!-- Theme style -->
 		    <link href="template/assets/dist/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
     </head>
@@ -93,10 +93,10 @@
 <?php } ?>
     </div><!-- /.login-box -->
 
-    <!-- jQuery -->
-    <script src="template/assets/plugins/jQuery/jquery-2.2.3.min.js"></script>
-    <!-- Bootstrap 3.3.2 JS -->
-    <script src="template/assets/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+    <!-- jQuery 3.7.1 (CDN) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <!-- Bootstrap 3.4.1 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
 
   </body>
 

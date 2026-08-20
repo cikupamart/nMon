@@ -27,8 +27,8 @@
 		<script>
 		  $.widget.bridge('uibutton', $.ui.button);
 		</script>
-		<!-- Bootstrap 3.3.7 -->
-		<script src="template/assets/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+		<!-- Bootstrap 3.4.1 (CDN) -->
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
 		<!-- PACE -->
 		<script src="template/assets/plugins/pace/pace.min.js"></script>
 		<!-- Select2 -->

@@ -1,3 +1,118 @@
+/* Modern CSS Improvements for nMon */
+
+/* Smooth transitions for interactive elements */
+a, .btn, .nav-link, .dropdown-item {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Better focus states for accessibility */
+a:focus, .btn:focus, input:focus, select:focus, textarea:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Improved dropdown menus */
+.dropdown-menu {
+    border: 1px solid rgba(0,0,0,.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+    border-radius: 6px;
+}
+
+/* Better table hover effect */
+.table-hover > tbody > tr:hover {
+    background-color: rgba(0,123,255,.05);
+}
+
+/* Modern card styling */
+.box {
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    border: 1px solid #e9ecef;
+}
+
+.box-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: 12px 15px;
+}
+
+.box-body {
+    padding: 15px;
+}
+
+/* Login page improvements */
+.login-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-box {
+    width: 360px;
+}
+
+.login-box-body {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+.login-logo {
+    margin-bottom: 20px;
+}
+
+/* Sidebar improvements */
+.main-sidebar {
+    box-shadow: 2px 0 8px rgba(0,0,0,.1);
+}
+
+.sidebar-menu > li > a {
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sidebar-menu > li.active > a {
+    border-left-color: #3c8dbc;
+    background-color: rgba(60,141,188,.1);
+}
+
+/* Alert notification badges */
+.label {
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* Better modal styling */
+.modal-content {
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: 16px 20px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+/* Footer styling */
+.main-footer {
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .login-box {
+        width: 90%;
+        margin: 0 auto;
+    }
+    
+    .modal-dialog {
+        margin: 10px;
+    }
+}
+
+/* Original styles */
 .table > tbody > tr > td, .table > tbody > tr > th, .table > tfoot > tr > td, .table > tfoot > tr > th, .table > thead > tr > td, .table > thead > tr > th {
 
     vertical-align: middle;
@@ -75,7 +190,6 @@
     margin-right: 5px;
     border-radius:50%;
 }
-
 
 
 
