@@ -24,6 +24,7 @@ $encryption_key = randomString(64);
 
 $ok = true;
 $errorMessage = '';
+$configWritten = false;
 
 require('../vendor/classes/class.medoo.php');
 
@@ -84,19 +85,53 @@ try {
 
     $database->update("core_config", ["value" => rtrim($_POST['app_url'], '/') . '/'], ["name" => "app_url"]);
 
-    $data = '<?php $config = array(
+    // --- Write config.php with explicit error checking ---
+    $configPath = dirname(__FILE__) . '/../config.php';
+    $configDir = dirname($configPath);
+
+    // Check if directory is writable
+    if (!is_writable($configDir)) {
+        throw new Exception("Cannot write config.php: directory '$configDir' is not writable. Please set permissions (chmod 755 or 775) on the nMon root folder.");
+    }
+
+    $configContent = '<?php $config = array(
     "database_type"=>"mysql",
-    "database_name"=>"' . $_POST['dbname'] . '",
-    "server"=>"' . $_POST['dbserver'] . '",
-    "username"=>"' . $_POST['dbuser'] . '",
-    "password"=>"' . $_POST['dbpassword'] . '",
+    "database_name"=>"' . addslashes($_POST['dbname']) . '",
+    "server"=>"' . addslashes($_POST['dbserver']) . '",
+    "username"=>"' . addslashes($_POST['dbuser']) . '",
+    "password"=>"' . addslashes($_POST['dbpassword']) . '",
     "charset"=>"utf8",
     "port"=>3306,
     "encryption_key"=>"' . $encryption_key . '" ); ?>';
-    $file = fopen("../config.php","w+");
-    fwrite($file,$data);
-    fclose($file);
 
+    // Method 1: file_put_contents (preferred)
+    $bytesWritten = @file_put_contents($configPath, $configContent);
+
+    if ($bytesWritten === false) {
+        // Method 2: fopen/fwrite fallback
+        $file = @fopen($configPath, "w");
+        if ($file === false) {
+            throw new Exception("Cannot create config.php: fopen() failed. Check that the nMon root folder is writable by the web server (chmod 755 or 775).");
+        }
+        $writeResult = fwrite($file, $configContent);
+        fclose($file);
+
+        if ($writeResult === false) {
+            throw new Exception("Cannot write to config.php: fwrite() failed. Check disk space and folder permissions.");
+        }
+    }
+
+    // Verify config.php was actually created and is readable
+    if (!file_exists($configPath)) {
+        throw new Exception("config.php was not created. Unknown error occurred. Check folder permissions.");
+    }
+
+    $verifyContent = @file_get_contents($configPath);
+    if ($verifyContent === false || strpos($verifyContent, 'database_name') === false) {
+        throw new Exception("config.php exists but appears empty or corrupted. Check folder permissions and disk space.");
+    }
+
+    $configWritten = true;
     $ok = true;
 
 } catch(Exception $e) {
@@ -128,13 +163,13 @@ try {
 
     </head>
   <body class="login-page">
-    <div class="login-box">
+    <div class="login-box" style="width: 600px;">
       <div class="login-logo">
         <b>n</b>Mon Installer
       </div><!-- /.login-logo -->
       <div class="login-box-body">
 
-          <?php if($ok == true): ?>
+          <?php if($ok == true && $configWritten): ?>
                   <div class="row"><div class='col-md-12'><div class="alert alert-success" role="alert">Installation Successful!</div></div></div>
                         <p class="login-box-msg">Please delete the "install" folder before signing in.</p>
                         <p>
@@ -144,7 +179,7 @@ try {
                         <p class="login-box-msg">Click <a href="../">here</a> to login.</p>
           <?php endif; ?>
 
-          <?php if($ok == false): ?>
+          <?php if($ok == false || !$configWritten): ?>
                   <div class="row"><div class='col-md-12'><div class="alert alert-danger" role="alert">Installation Error!</div></div></div>
                         <p class="login-box-msg">We were unable to install nMon. Please try again.</p>
                         <?php if(!empty($errorMessage)): ?>

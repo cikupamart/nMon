@@ -112,7 +112,13 @@ function baseURL() { //return base url for cron jobs
                         <?php if (!is_writable(dirname('../config.php'))) { ?>
                             <div class="alert alert-danger">
                                 <p class="text-bold"><i class="icon fa fa-ban"></i> nMon Directory is not writable</p>
-                                nMon does not have suficient permissions to write the config.php file.
+                                nMon cannot write config.php to the project root folder.
+                            </div>
+                            <div class="alert alert-warning">
+                                <p class="text-bold"><i class="icon fa fa-wrench"></i> How to fix:</p>
+                                <p>Run this command on your server:</p>
+                                <code style="display:block; padding:8px; background:#f5f5f5; margin-top:5px; word-break:break-all;">chmod 755 <?php echo dirname(dirname(__FILE__)); ?></code>
+                                <p style="margin-top:8px;">Or if using cPanel: File Manager &rarr; Select folder &rarr; Permissions &rarr; Set to 755</p>
                             </div>
                         <?php } else { ?>
                             <div class="alert alert-success ">
