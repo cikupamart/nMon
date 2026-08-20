@@ -1,1 +1,294 @@
-<?php\n\n// Remote Control Controller\n// Handles remote commands for agents\n\n// Check if user is logged in and authorized\nif (!isset($liu) || !in_array('remoteControl', $perms)) {\n    header('Content-Type: application/json');\n    echo json_encode(['error' => 'Unauthorized']);\n    exit;\n}\n\n// Get action\n$action = $_GET['action'] ?? $_POST['action'] ?? '';\n\nswitch ($action) {\n    case 'send':\n        sendRemoteCommand();\n        break;\n    \n    case 'status':\n        getCommandStatus();\n        break;\n    \n    case 'result':\n        getCommandResult();\n        break;\n    \n    case 'list':\n        listCommands();\n        break;\n    \n    case 'agents':\n        listAgents();\n        break;\n    \n    case 'map':\n        getMapData();\n        break;\n    \n    default:\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Invalid action']);\n        break;\n}\n\n//============\n// Functions\n//============\n\nfunction sendRemoteCommand() {\n    global $database, $liu;\n    \n    $serverId = intval($_POST['server_id'] ?? 0);\n    $command = trim($_POST['command'] ?? '');\n    \n    if ($serverId <= 0 || empty($command)) {\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Invalid parameters']);\n        return;\n    }\n    \n    // Verify server exists\n    $server = $database->get('app_servers', '*', ['id' => $serverId]);\n    if (!$server) {\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Server not found']);\n        return;\n    }\n    \n    // Verify user has access to this server\n    $liu_groups = unserialize($liu['groups']);\n    if (!in_array('0', $liu_groups) && !in_array($server['groupid'], $liu_groups)) {\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Access denied']);\n        return;\n    }\n    \n    // Save command to database\n    $cmdId = $database->insert('app_remote_commands', [\n        'server_id' => $serverId,\n        'command' => $command,\n        'user_id' => $liu['id'],\n        'user_name' => $liu['name'],\n        'status' => 'pending',\n        'created_at' => date('Y-m-d H:i:s'),\n        'executed_at' => null,\n        'completed_at' => null\n    ]);\n    \n    // Log the action\n    logSystem(\"Remote command sent - Server: {$server['name']} - Command: {$command}\");\n    \n    header('Content-Type: application/json');\n    echo json_encode([\n        'success' => true,\n        'command_id' => $cmdId,\n        'message' => 'Command sent successfully'\n    ]);\n}\n\nfunction getCommandStatus() {\n    global $database;\n    \n    $cmdId = intval($_GET['id'] ?? 0);\n    \n    if ($cmdId <= 0) {\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Invalid command ID']);\n        return;\n    }\n    \n    $command = $database->get('app_remote_commands', '*', ['id' => $cmdId]);\n    if (!$command) {\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Command not found']);\n        return;\n    }\n    \n    header('Content-Type: application/json');\n    echo json_encode($command);\n}\n\nfunction getCommandResult() {\n    global $database;\n    \n    $cmdId = intval($_GET['id'] ?? 0);\n    \n    if ($cmdId <= 0) {\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Invalid command ID']);\n        return;\n    }\n    \n    $command = $database->get('app_remote_commands', '*', ['id' => $cmdId]);\n    if (!$command) {\n        header('Content-Type: application/json');\n        echo json_encode(['error' => 'Command not found']);\n        return;\n    }\n    \n    // Decode output if exists\n    $output = '';\n    if (!empty($command['output'])) {\n        $output = base64_decode($command['output']);\n    }\n    \n    header('Content-Type: application/json');\n    echo json_encode([\n        'id' => $command['id'],\n        'command' => $command['command'],\n        'status' => $command['status'],\n        'exit_code' => $command['exit_code'] ?? null,\n        'output' => $output,\n        'executed_at' => $command['executed_at'],\n        'completed_at' => $command['completed_at']\n    ]);\n}\n\nfunction listCommands() {\n    global $database;\n    \n    $serverId = intval($_GET['server_id'] ?? 0);\n    $limit = intval($_GET['limit'] ?? 50);\n    \n    $where = [];\n    if ($serverId > 0) {\n        $where['server_id'] = $serverId;\n    }\n    \n    $commands = $database->select('app_remote_commands', '*', [\n        $where,\n        'ORDER' => ['id' => 'DESC'],\n        'LIMIT' => $limit\n    ]);\n    \n    header('Content-Type: application/json');\n    echo json_encode($commands);\n}\n\nfunction listAgents() {\n    global $database, $liu;\n    \n    $liu_groups = unserialize($liu['groups']);\n    \n    $servers = $database->select('app_servers', '*', [\n        'ORDER' => ['name' => 'ASC']\n    ]);\n    \n    // Filter by user groups\n    $filteredServers = [];\n    foreach ($servers as $server) {\n        if (in_array('0', $liu_groups) || in_array($server['groupid'], $liu_groups)) {\n            $filteredServers[] = $server;\n        }\n    }\n    \n    header('Content-Type: application/json');\n    echo json_encode($filteredServers);\n}\n\nfunction getMapData() {\n    global $database, $liu;\n    \n    $liu_groups = unserialize($liu['groups']);\n    \n    $servers = $database->select('app_servers', '*', [\n        'on_map' => 1,\n        'ORDER' => ['name' => 'ASC']\n    ]);\n    \n    // Filter by user groups and add location data\n    $mapData = [];\n    foreach ($servers as $server) {\n        if (in_array('0', $liu_groups) || in_array($server['groupid'], $liu_groups)) {\n            $latest = Server::latestData($server['id']);\n            $location = getServerLocation($server, $latest);\n            \n            $mapData[] = [\n                'id' => $server['id'],\n                'name' => $server['name'],\n                'type' => $server['type'],\n                'status' => $server['status'],\n                'lat' => $location['lat'],\n                'lng' => $location['lng'],\n                'location_name' => $location['name'],\n                'ip' => $location['ip'],\n                'uptime' => Server::uptimePercentage($server['id'], '24h')\n            ];\n        }\n    }\n    \n    header('Content-Type: application/json');\n    echo json_encode($mapData);\n}\n\nfunction getServerLocation($server, $latest) {\n    $location = [\n        'lat' => floatval($server['lat'] ?? 0),\n        'lng' => floatval($server['lng'] ?? 0),\n        'name' => $server['name'],\n        'ip' => ''\n    ];\n    \n    if (empty($latest)) {\n        return $location;\n    }\n    \n    // Try to get IP from geodata or network info\n    if (!empty($server['geodata'])) {\n        $geodata = @unserialize($server['geodata']);\n        if (!empty($geodata['lat']) && !empty($geodata['lon'])) {\n            $location['lat'] = floatval($geodata['lat']);\n            $location['lng'] = floatval($geodata['lon']);\n        }\n        if (!empty($geodata['countryName'])) {\n            $location['name'] .= ' - ' . $geodata['countryName'];\n        }\n    }\n    \n    // Get IP from network info\n    if ($server['type'] == 'linux') {\n        $ipv4 = Server::extractData('ipv4_addresses', $latest['data'], true);\n        if (!empty($ipv4)) {\n            $parts = explode(',', $ipv4);\n            if (isset($parts[1])) {\n                $location['ip'] = $parts[1];\n            }\n        }\n    } elseif ($server['type'] == 'windows') {\n        $netInterfaces = json_decode(Server::extractData('net_interfaces', $latest['data'], true), true);\n        if (!empty($netInterfaces)) {\n            foreach ($netInterfaces as $iface) {\n                if (!empty($iface['ip4'])) {\n                    $location['ip'] = $iface['ip4'];\n                    break;\n                }\n            }\n        }\n    }\n    \n    return $location;\n}\n\n?>\n
+<?php
+
+// Remote Control Controller
+// Handles remote commands for agents
+
+// Check if user is logged in and authorized
+if (!isset($liu) || !in_array('remoteControl', $perms)) {
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
+
+// Check if remote commands table exists (for fresh installs or missing migrations)
+try {
+    $tableCheck = $database->select('app_remote_commands', 'id', ['LIMIT' => 1]);
+} catch (Exception $e) {
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Remote control feature not available. Please run the database upgrade: install/upgrade.php']);
+    exit;
+}
+
+// Get action
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+
+switch ($action) {
+    case 'send':
+        sendRemoteCommand();
+        break;
+    
+    case 'status':
+        getCommandStatus();
+        break;
+    
+    case 'result':
+        getCommandResult();
+        break;
+    
+    case 'list':
+        listCommands();
+        break;
+    
+    case 'agents':
+        listAgents();
+        break;
+    
+    case 'map':
+        getMapData();
+        break;
+    
+    default:
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Invalid action']);
+        break;
+}
+
+//============
+// Functions
+//============
+
+function sendRemoteCommand() {
+    global $database, $liu;
+    
+    $serverId = intval($_POST['server_id'] ?? 0);
+    $command = trim($_POST['command'] ?? '');
+    
+    if ($serverId <= 0 || empty($command)) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Invalid parameters']);
+        return;
+    }
+    
+    // Verify server exists
+    $server = $database->get('app_servers', '*', ['id' => $serverId]);
+    if (!$server) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Server not found']);
+        return;
+    }
+    
+    // Verify user has access to this server
+    $liu_groups = unserialize($liu['groups']);
+    if (!in_array('0', $liu_groups) && !in_array($server['groupid'], $liu_groups)) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Access denied']);
+        return;
+    }
+    
+    // Save command to database
+    $cmdId = $database->insert('app_remote_commands', [
+        'server_id' => $serverId,
+        'command' => $command,
+        'user_id' => $liu['id'],
+        'user_name' => $liu['name'],
+        'status' => 'pending',
+        'created_at' => date('Y-m-d H:i:s'),
+        'executed_at' => null,
+        'completed_at' => null
+    ]);
+    
+    // Log the action
+    logSystem("Remote command sent - Server: {$server['name']} - Command: {$command}");
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'command_id' => $cmdId,
+        'message' => 'Command sent successfully'
+    ]);
+}
+
+function getCommandStatus() {
+    global $database;
+    
+    $cmdId = intval($_GET['id'] ?? 0);
+    
+    if ($cmdId <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Invalid command ID']);
+        return;
+    }
+    
+    $command = $database->get('app_remote_commands', '*', ['id' => $cmdId]);
+    if (!$command) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Command not found']);
+        return;
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode($command);
+}
+
+function getCommandResult() {
+    global $database;
+    
+    $cmdId = intval($_GET['id'] ?? 0);
+    
+    if ($cmdId <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Invalid command ID']);
+        return;
+    }
+    
+    $command = $database->get('app_remote_commands', '*', ['id' => $cmdId]);
+    if (!$command) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Command not found']);
+        return;
+    }
+    
+    // Decode output if exists
+    $output = '';
+    if (!empty($command['output'])) {
+        $output = base64_decode($command['output']);
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode([
+        'id' => $command['id'],
+        'command' => $command['command'],
+        'status' => $command['status'],
+        'exit_code' => $command['exit_code'] ?? null,
+        'output' => $output,
+        'executed_at' => $command['executed_at'],
+        'completed_at' => $command['completed_at']
+    ]);
+}
+
+function listCommands() {
+    global $database;
+    
+    $serverId = intval($_GET['server_id'] ?? 0);
+    $limit = intval($_GET['limit'] ?? 50);
+    
+    $where = [];
+    if ($serverId > 0) {
+        $where['server_id'] = $serverId;
+    }
+    
+    $commands = $database->select('app_remote_commands', '*', [
+        $where,
+        'ORDER' => ['id' => 'DESC'],
+        'LIMIT' => $limit
+    ]);
+    
+    header('Content-Type: application/json');
+    echo json_encode($commands);
+}
+
+function listAgents() {
+    global $database, $liu;
+    
+    $liu_groups = unserialize($liu['groups']);
+    
+    $servers = $database->select('app_servers', '*', [
+        'ORDER' => ['name' => 'ASC']
+    ]);
+    
+    // Filter by user groups
+    $filteredServers = [];
+    foreach ($servers as $server) {
+        if (in_array('0', $liu_groups) || in_array($server['groupid'], $liu_groups)) {
+            $filteredServers[] = $server;
+        }
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode($filteredServers);
+}
+
+function getMapData() {
+    global $database, $liu;
+    
+    $liu_groups = unserialize($liu['groups']);
+    
+    $servers = $database->select('app_servers', '*', [
+        'on_map' => 1,
+        'ORDER' => ['name' => 'ASC']
+    ]);
+    
+    // Filter by user groups and add location data
+    $mapData = [];
+    foreach ($servers as $server) {
+        if (in_array('0', $liu_groups) || in_array($server['groupid'], $liu_groups)) {
+            $latest = Server::latestData($server['id']);
+            $location = getServerLocation($server, $latest);
+            
+            $mapData[] = [
+                'id' => $server['id'],
+                'name' => $server['name'],
+                'type' => $server['type'],
+                'status' => $server['status'],
+                'lat' => $location['lat'],
+                'lng' => $location['lng'],
+                'location_name' => $location['name'],
+                'ip' => $location['ip'],
+                'uptime' => Server::uptimePercentage($server['id'], '24h')
+            ];
+        }
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode($mapData);
+}
+
+function getServerLocation($server, $latest) {
+    $location = [
+        'lat' => floatval($server['lat'] ?? 0),
+        'lng' => floatval($server['lng'] ?? 0),
+        'name' => $server['name'],
+        'ip' => ''
+    ];
+    
+    if (empty($latest)) {
+        return $location;
+    }
+    
+    // Try to get IP from geodata or network info
+    if (!empty($server['geodata'])) {
+        $geodata = @unserialize($server['geodata']);
+        if (!empty($geodata['lat']) && !empty($geodata['lon'])) {
+            $location['lat'] = floatval($geodata['lat']);
+            $location['lng'] = floatval($geodata['lon']);
+        }
+        if (!empty($geodata['countryName'])) {
+            $location['name'] .= ' - ' . $geodata['countryName'];
+        }
+    }
+    
+    // Get IP from network info
+    if ($server['type'] == 'linux') {
+        $ipv4 = Server::extractData('ipv4_addresses', $latest['data'], true);
+        if (!empty($ipv4)) {
+            $parts = explode(',', $ipv4);
+            if (isset($parts[1])) {
+                $location['ip'] = $parts[1];
+            }
+        }
+    } elseif ($server['type'] == 'windows') {
+        $netInterfaces = json_decode(Server::extractData('net_interfaces', $latest['data'], true), true);
+        if (!empty($netInterfaces)) {
+            foreach ($netInterfaces as $iface) {
+                if (!empty($iface['ip4'])) {
+                    $location['ip'] = $iface['ip4'];
+                    break;
+                }
+            }
+        }
+    }
+    
+    return $location;
+}
+
+?>

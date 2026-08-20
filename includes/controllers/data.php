@@ -48,6 +48,18 @@ foreach ($main_checks_unresolved as $key => $value) {
 
 
 
+// LIVE MAPS
+if ($route == "maps") {
+	isAuthorized("viewMaps");
+	$pageTitle = __("Live Maps");
+}
+
+// REMOTE CONTROL
+if ($route == "remote") {
+	isAuthorized("remoteControl");
+	$pageTitle = __("Remote Control");
+}
+
 // SEARCH
 if ($route == "search") {
 	$servers = $database->select("app_servers", "*", [ "AND" => [ "groupid" => $liu_groups, "OR" => [

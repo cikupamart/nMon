@@ -13,7 +13,7 @@ if($debug == true) {
 }
 
 
-$latestversion = 1.9;
+$latestversion = 2.0;
 $status = 'ok';
 
 # LOAD CONFIGURAGION FILE
@@ -34,11 +34,9 @@ if($status == 'ok') {
 
         $sql = file_get_contents('sql/db_1.0-1.1.sql');
         $database->query($sql);
-        sleep(1);
 
         $database->update("core_config", ["value" => "1.1"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -50,11 +48,9 @@ if($status == 'ok') {
 
         $sql = file_get_contents('sql/db_1.1-1.2.sql');
         $database->query($sql);
-        sleep(1);
 
         $database->update("core_config", ["value" => "1.2"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -65,11 +61,9 @@ if($status == 'ok') {
 
         $sql = file_get_contents('sql/db_1.2-1.3.sql');
         $database->query($sql);
-        sleep(1);
 
         $database->update("core_config", ["value" => "1.3"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -80,11 +74,9 @@ if($status == 'ok') {
 
         $sql = file_get_contents('sql/db_1.3-1.4.sql');
         $database->query($sql);
-        sleep(1);
 
         $database->update("core_config", ["value" => "1.4"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -95,7 +87,6 @@ if($status == 'ok') {
 
         $database->update("core_config", ["value" => "1.5"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -106,7 +97,6 @@ if($status == 'ok') {
 
         $database->update("core_config", ["value" => "1.6"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -117,7 +107,6 @@ if($status == 'ok') {
 
         $database->update("core_config", ["value" => "1.7"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -128,11 +117,9 @@ if($status == 'ok') {
 
         $sql = file_get_contents('sql/db_1.7-1.8.sql');
         $database->query($sql);
-        sleep(1);
 
         $database->update("core_config", ["value" => "1.8"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
@@ -144,17 +131,36 @@ if($status == 'ok') {
 
         $sql = file_get_contents('sql/db_1.8-1.9.sql');
         $database->query($sql);
-        sleep(1);
 
         $database->update("core_config", ["value" => "1.9"], ["name" => "db_version"]);
         $status = 'updated';
-        sleep(1);
 
         $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
 
     }
 
 
+    // UPGRADE to 2.0
+    if($currentversion == 1.9) {
+
+        $sql = file_get_contents('sql/db_1.9-2.0.sql');
+        $database->query($sql);
+
+        // Add remoteControl permission to Super Administrator role
+        $adminPerms = $database->get("core_roles", "perms", ["id" => 1]);
+        $permsArray = unserialize($adminPerms);
+        if (!in_array("remoteControl", $permsArray)) {
+            $permsArray[] = "remoteControl";
+            $permsArray[] = "viewMaps";
+            $database->update("core_roles", ["perms" => serialize($permsArray)], ["id" => 1]);
+        }
+
+        $database->update("core_config", ["value" => "2.0"], ["name" => "db_version"]);
+        $status = 'updated';
+
+        $currentversion = $database->get("core_config", "value", [ "name" => "db_version" ]);
+
+    }
 
 }
 
@@ -189,7 +195,7 @@ if($status == 'ok') {
       <div class="login-box-body">
 
           <?php if($status == "ok"): ?>
-                        <p class="login-box-msg">Nothing to do, database is already at latest version.</p>
+                        <p class="login-box-msg">Nothing to do, database is already at latest version (v2.0).</p>
           <?php endif; ?>
           <?php if($status == "noconfig"): ?>
                         <p class="login-box-msg">Configuration file is missing.</p>
@@ -202,9 +208,8 @@ if($status == 'ok') {
     </div><!-- /.login-box -->
 
 
-
     <!-- jQuery 2.2.3 -->
-    <script src="../template/assets/plugins/jQuery/jquery-2.2.3.min.js"></script>
+    <script src="../template/assets/plugins/jQuery/jQuery-2.2.3.min.js"></script>
     <!-- Bootstrap 3.3.2 JS -->
     <script src="../template/assets/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
 

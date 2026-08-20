@@ -22,80 +22,87 @@ function randomString($chars=10) { //generate random string
 
 $encryption_key = randomString(64);
 
+$ok = true;
+$errorMessage = '';
 
 require('../vendor/classes/class.medoo.php');
-$database = new medoo([
-    "database_type"=>"mysql",
-    "database_name"=> $_POST['dbname'],
-    "server"=> $_POST['dbserver'],
-    "username"=> $_POST['dbuser'],
-    "password"=> $_POST['dbpassword'],
-    "charset"=>"utf8",
-    "port"=>3306
-]);
 
-$sql = file_get_contents('sql/db.sql');
-$database->query($sql);
+try {
+    $database = new medoo([
+        "database_type"=>"mysql",
+        "database_name"=> $_POST['dbname'],
+        "server"=> $_POST['dbserver'],
+        "username"=> $_POST['dbuser'],
+        "password"=> $_POST['dbpassword'],
+        "charset"=>"utf8",
+        "port"=>3306
+    ]);
 
-sleep(5);
+    $sql = file_get_contents('sql/db.sql');
+    $database->query($sql);
 
-$password = sha1($_POST['password']);
-$email = strtolower($_POST['email']);
-$name = $_POST['name'];
+    $password = password_hash($_POST['password'], PASSWORD_BCRYPT, ['cost' => 12]);
+    $email = strtolower($_POST['email']);
+    $name = $_POST['name'];
 
-$database = new medoo([
-    "database_type"=>"mysql",
-    "database_name"=> $_POST['dbname'],
-    "server"=> $_POST['dbserver'],
-    "username"=> $_POST['dbuser'],
-    "password"=> $_POST['dbpassword'],
-    "charset"=>"utf8",
-    "port"=>3306
-]);
+    $database = new medoo([
+        "database_type"=>"mysql",
+        "database_name"=> $_POST['dbname'],
+        "server"=> $_POST['dbserver'],
+        "username"=> $_POST['dbuser'],
+        "password"=> $_POST['dbpassword'],
+        "charset"=>"utf8",
+        "port"=>3306
+    ]);
 
-$database->insert("core_users", [
-    "roleid" => "1",
-    "name" => $name,
-    "email" => $email,
-    "password" => $password,
-    "groups" => 'a:1:{i:0;s:1:"0";}',
-    "theme" => "skin-green",
-    "sidebar" => "opened",
-    "layout" => "",
-    "notes" => "",
-    "sessionid" => "",
-    "resetkey" => "",
-    "lang" => "en",
+    $database->insert("core_users", [
+        "roleid" => "1",
+        "name" => $name,
+        "email" => $email,
+        "password" => $password,
+        "groups" => 'a:1:{i:0;s:1:"0";}',
+        "theme" => "skin-green",
+        "sidebar" => "opened",
+        "layout" => "",
+        "notes" => "",
+        "sessionid" => "",
+        "resetkey" => "",
+        "lang" => "en",
 	"autorefresh" => 0,
-]);
+    ]);
 
-$database->insert("app_contacts", [
-    "groupid" => 1,
+    $database->insert("app_contacts", [
+        "groupid" => 1,
 	"status" => 1,
-    "name" => $name,
-    "email" => $email,
-    "mobilenumber" => "",
-    "pushbullet" => "",
-    "twitter" => "",
-    "pushover" => "",
-]);
+        "name" => $name,
+        "email" => $email,
+        "mobilenumber" => "",
+        "pushbullet" => "",
+        "twitter" => "",
+        "pushover" => "",
+    ]);
 
-$database->update("core_config", ["value" => rtrim($_POST['app_url'], '/') . '/'], ["name" => "app_url"]);
+    $database->update("core_config", ["value" => rtrim($_POST['app_url'], '/') . '/'], ["name" => "app_url"]);
 
-   $data = '<?php $config = array(
+    $data = '<?php $config = array(
     "database_type"=>"mysql",
-    "database_name"=>"'.$_POST['dbname'].'",
-    "server"=>"'.$_POST['dbserver'].'",
-    "username"=>"'.$_POST['dbuser'].'",
-    "password"=>"'.$_POST['dbpassword'].'",
+    "database_name"=>"' . $_POST['dbname'] . '",
+    "server"=>"' . $_POST['dbserver'] . '",
+    "username"=>"' . $_POST['dbuser'] . '",
+    "password"=>"' . $_POST['dbpassword'] . '",
     "charset"=>"utf8",
     "port"=>3306,
-    "encryption_key"=>"'.$encryption_key.'" ); ?>';
-   $file = fopen("../config.php","w+");
-   fwrite($file,$data);
-   fclose($file);
+    "encryption_key"=>"' . $encryption_key . '" ); ?>';
+    $file = fopen("../config.php","w+");
+    fwrite($file,$data);
+    fclose($file);
 
-   $ok = true;
+    $ok = true;
+
+} catch(Exception $e) {
+    $ok = false;
+    $errorMessage = $e->getMessage();
+}
 
 ?>
 
@@ -128,11 +135,11 @@ $database->update("core_config", ["value" => rtrim($_POST['app_url'], '/') . '/'
       <div class="login-box-body">
 
           <?php if($ok == true): ?>
-                  <div class="row"><div class='col-md-12'><div class="alert alert-success" role="alert">Installation Succesfull!</div></div></div>
+                  <div class="row"><div class='col-md-12'><div class="alert alert-success" role="alert">Installation Successful!</div></div></div>
                         <p class="login-box-msg">Please delete the "install" folder before signing in.</p>
                         <p>
-                            <b>Admin Email </b><?php echo $_POST['email']; ?><br>
-                            <b>Admin Password </b><?php echo $_POST['password']; ?><br>
+                            <b>Admin Email </b><?php echo htmlspecialchars($_POST['email']); ?><br>
+                            <b>Admin Password </b><?php echo htmlspecialchars($_POST['password']); ?><br>
                         </p>
                         <p class="login-box-msg">Click <a href="../">here</a> to login.</p>
           <?php endif; ?>
@@ -140,6 +147,12 @@ $database->update("core_config", ["value" => rtrim($_POST['app_url'], '/') . '/'
           <?php if($ok == false): ?>
                   <div class="row"><div class='col-md-12'><div class="alert alert-danger" role="alert">Installation Error!</div></div></div>
                         <p class="login-box-msg">We were unable to install nMon. Please try again.</p>
+                        <?php if(!empty($errorMessage)): ?>
+                        <div class="alert alert-warning">
+                            <p class="text-bold"><i class="icon fa fa-ban"></i> Error Details</p>
+                            <p><?php echo htmlspecialchars($errorMessage); ?></p>
+                        </div>
+                        <?php endif; ?>
                         <div class="row">
                           <div class="col-xs-6"><button onclick="window.history.back()" class="btn btn-default btn-block btn-flat">Back</button></div><!-- /.col -->
                           <div class="col-xs-6"></div><!-- /.col -->
@@ -149,7 +162,6 @@ $database->update("core_config", ["value" => rtrim($_POST['app_url'], '/') . '/'
 
       </div><!-- /.login-box-body -->
     </div><!-- /.login-box -->
-
 
 
     <!-- jQuery 2.1.3 -->

@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS `app_checks_alerts` (
 --
 
 INSERT INTO `app_checks_alerts` (`id`, `checkid`, `type`, `comparison`, `comparison_limit`, `occurrences`, `contacts`, `status`) VALUES
-(1, 1, 'offline', '==', '', 2, 'a:1:{i:0;s:1:"1";}', 1),
-(2, 1, 'responsetime', '>=', '700', 2, 'a:1:{i:0;s:1:"1";}', 1);
+(1, 1, 'offline', '==', '', 2, 'a:1:{i:0;s:1:\"1\";}', 1),
+(2, 1, 'responsetime', '>=', '700', 2, 'a:1:{i:0;s:1:\"1\";}', 1);
 
 -- --------------------------------------------------------
 
@@ -372,12 +372,12 @@ CREATE TABLE IF NOT EXISTS `app_websites_alerts` (
 --
 
 INSERT INTO `app_websites_alerts` (`id`, `websiteid`, `type`, `comparison`, `comparison_limit`, `occurrences`, `contacts`, `status`) VALUES
-(1, 0, 'responsecode', '!=', '200', 2, 'a:1:{i:0;s:1:"1";}', 1),
-(2, 0, 'loadtime', '>=', '5', 2, 'a:1:{i:0;s:1:"1";}', 1),
-(3, 1, 'responsecode', '!=', '200', 2, 'a:1:{i:0;s:1:"1";}', 1),
-(4, 1, 'loadtime', '>=', '5', 2, 'a:1:{i:0;s:1:"1";}', 1),
-(5, 2, 'responsecode', '!=', '200', 2, 'a:1:{i:0;s:1:"1";}', 1),
-(6, 2, 'loadtime', '>=', '5', 2, 'a:1:{i:0;s:1:"1";}', 1);
+(1, 0, 'responsecode', '!=', '200', 2, 'a:1:{i:0;s:1:\"1\";}', 1),
+(2, 0, 'loadtime', '>=', '5', 2, 'a:1:{i:0;s:1:\"1\";}', 1),
+(3, 1, 'responsecode', '!=', '200', 2, 'a:1:{i:0;s:1:\"1\";}', 1),
+(4, 1, 'loadtime', '>=', '5', 2, 'a:1:{i:0;s:1:\"1\";}', 1),
+(5, 2, 'responsecode', '!=', '200', 2, 'a:1:{i:0;s:1:\"1\";}', 1),
+(6, 2, 'loadtime', '>=', '5', 2, 'a:1:{i:0;s:1:\"1\";}', 1);
 
 -- --------------------------------------------------------
 
@@ -459,8 +459,8 @@ INSERT INTO `core_config` (`name`, `value`) VALUES
 ('company_details', ''),
 ('company_name', 'nMon Company'),
 ('date_format', 'Y-m-d;yyyy-mm-dd'),
-('db_version', '1.9'),
-('default_contacts', 'a:1:{i:0;s:1:"1";}'),
+('db_version', '2.0'),
+('default_contacts', 'a:1:{i:0;s:1:\"1\";}'),
 ('default_lang', 'en'),
 ('email_from_address', 'nmon@example.com'),
 ('email_from_name', 'nMon'),
@@ -489,7 +489,9 @@ INSERT INTO `core_config` (`name`, `value`) VALUES
 ('week_start', '1'),
 ('pushover_apitoken', ''),
 ('xss_filtering', 'true'),
-('google_maps_api_key', '');
+('google_maps_api_key', ''),
+('telegram_bot_token', ''),
+('telegram_chat_id', '');
 
 -- --------------------------------------------------------
 
@@ -607,8 +609,23 @@ CREATE TABLE IF NOT EXISTS `core_roles` (
 --
 
 INSERT INTO `core_roles` (`id`, `name`, `perms`) VALUES
-(1, 'Super Administrator', 'a:40:{i:0;s:9:"addServer";i:1;s:10:"editServer";i:2;s:12:"deleteServer";i:3;s:11:"viewServers";i:4;s:10:"addWebsite";i:5;s:11:"editWebsite";i:6;s:13:"deleteWebsite";i:7;s:12:"viewWebsites";i:8;s:8:"addCheck";i:9;s:9:"editCheck";i:10;s:11:"deleteCheck";i:11;s:10:"viewChecks";i:12;s:10:"addContact";i:13;s:11:"editContact";i:14;s:13:"deleteContact";i:15;s:12:"viewContacts";i:16;s:8:"addGroup";i:17;s:9:"editGroup";i:18;s:11:"deleteGroup";i:19;s:10:"viewGroups";i:20;s:7:"addPage";i:21;s:8:"editPage";i:22;s:10:"deletePage";i:23;s:9:"viewPages";i:24;s:7:"addUser";i:25;s:8:"editUser";i:26;s:10:"deleteUser";i:27;s:9:"viewUsers";i:28;s:7:"addRole";i:29;s:8:"editRole";i:30;s:10:"deleteRole";i:31;s:9:"viewRoles";i:32;s:14:"manageSettings";i:33;s:8:"viewLogs";i:34;s:13:"viewAlertLogs";i:35;s:10:"viewSystem";i:36;s:6:"search";i:37;s:4:"Null";i:38;s:13:"remoteControl";i:39;s:9:"viewMaps";}'),
-(2, 'Operator', 'a:20:{i:0;s:9:"addServer";i:1;s:11:"viewServers";i:2;s:10:"addWebsite";i:3;s:12:"viewWebsites";i:4;s:8:"addCheck";i:5;s:10:"viewChecks";i:6;s:10:"addContact";i:7;s:12:"viewContacts";i:8;s:8:"addGroup";i:9;s:10:"viewGroups";i:10;s:7:"addPage";i:11;s:9:"viewPages";i:12;s:7:"addUser";i:13;s:9:"viewUsers";i:14;s:9:"viewRoles";i:15;s:8:"viewLogs";i:16;s:13:"viewAlertLogs";i:17;s:10:"viewSystem";i:18;s:6:"search";i:19;s:4:"Null";}');
+(1, 'Super Administrator', 'a:40:{i:0;s:9:\"addServer\";i:1;s:10:\"editServer\";i:2;s:12:\"deleteServer\";i:3;s:11:\"viewServers\";i:4;s:10:\"addWebsite\";i:5;s:11:\"editWebsite\";i:6;s:13:\"deleteWebsite\";i:7;s:12:\"viewWebsites\";i:8;s:8:\"addCheck\";i:9;s:9:\"editCheck\";i:10;s:11:\"deleteCheck\";i:11;s:10:\"viewChecks\";i:12;s:10:\"addContact\";i:13;s:11:\"editContact\";i:14;s:13:\"deleteContact\";i:15;s:12:\"viewContacts\";i:16;s:8:\"addGroup\";i:17;s:9:\"editGroup\";i:18;s:11:\"deleteGroup\";i:19;s:10:\"viewGroups\";i:20;s:7:\"addPage\";i:21;s:8:\"editPage\";i:22;s:10:\"deletePage\";i:23;s:9:\"viewPages\";i:24;s:7:\"addUser\";i:25;s:8:\"editUser\";i:26;s:10:\"deleteUser\";i:27;s:9:\"viewUsers\";i:28;s:7:\"addRole\";i:29;s:8:\"editRole\";i:30;s:10:\"deleteRole\";i:31;s:9:\"viewRoles\";i:32;s:14:\"manageSettings\";i:33;s:8:\"viewLogs\";i:34;s:13:\"viewAlertLogs\";i:35;s:10:\"viewSystem\";i:36;s:6:\"search\";i:37;s:4:\"Null\";i:38;s:13:\"remoteControl\";i:39;s:9:\"viewMaps\";}'),
+(2, 'Operator', 'a:20:{i:0;s:9:\"addServer\";i:1;s:11:\"viewServers\";i:2;s:10:\"addWebsite\";i:3;s:12:\"viewWebsites\";i:4;s:8:\"addCheck\";i:5;s:10:\"viewChecks\";i:6;s:10:\"addContact\";i:7;s:12:\"viewContacts\";i:8;s:8:\"addGroup\";i:9;s:10:\"viewGroups\";i:10;s:7:\"addPage\";i:11;s:9:\"viewPages\";i:12;s:7:\"addUser\";i:13;s:9:\"viewUsers\";i:14;s:9:\"viewRoles\";i:15;s:8:\"viewLogs\";i:16;s:13:\"viewAlertLogs\";i:17;s:10:\"viewSystem\";i:18;s:6:\"search\";i:19;s:4:\"Null\";}');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `core_ratelimit`
+--
+
+DROP TABLE IF EXISTS `core_ratelimit`;
+CREATE TABLE IF NOT EXISTS `core_ratelimit` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `key` varchar(255) NOT NULL,
+  `timestamp` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `key_timestamp` (`key`, `timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -687,6 +704,30 @@ CREATE TABLE IF NOT EXISTS `core_users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `id` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `app_remote_commands`
+--
+
+DROP TABLE IF EXISTS `app_remote_commands`;
+CREATE TABLE IF NOT EXISTS `app_remote_commands` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `server_id` int(11) NOT NULL,
+  `command` text NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `user_name` varchar(255) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `output` longtext,
+  `exit_code` int(11) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `executed_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `server_id` (`server_id`),
+  KEY `status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
