@@ -437,16 +437,19 @@
                       <li <?php if(strpos($route,'alerting/contacts') !== false) echo 'class="active"'; ?>><a href="?route=alerting/contacts"><i class="fa fa-angle-double-right"></i> <?php _e('Contacts'); ?></a></li>
                       <li <?php if(strpos($route,'alerting/log') !== false) echo 'class="active"'; ?>><a href="?route=alerting/log"><i class="fa fa-angle-double-right"></i> <?php _e('Log'); ?></a></li>
                   </ul>
-              </li>
-
-              <li <?php if(strpos($route,'pages') !== false) echo 'class="active"'; ?>>
+              </li>              <li <?php if(strpos($route,'pages') !== false) echo 'class="active"'; ?>>
                   <a href="?route=pages">
                       <i class="fa fa-bookmark fa-fw"></i> <span><?php _e('Pages'); ?></span>
                   </a>
               </li>
 
-
-
+              <?php if(in_array("viewMaps",$perms)) { ?>
+              <li <?php if(strpos($route,'maps') !== false) echo 'class="active"'; ?>>
+                  <a href="?route=maps">
+                      <i class="fa fa-map-marker fa-fw"></i> <span><?php _e('Live Maps'); ?></span>
+                  </a>
+              </li>
+              <?php } ?>
 
 
 

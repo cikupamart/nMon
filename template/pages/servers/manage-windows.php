@@ -31,6 +31,10 @@
 
 						<li <?php if ($section == "incidents") echo 'class="active"'; ?> ><a href="?route=servers/manage-windows&id=<?php echo $server['id']; ?>&section=incidents"><?php _e('Incidents'); ?></a></li>
 
+						<?php if(in_array("remoteControl",$perms)) { ?>
+						<li <?php if ($section == "remote") echo 'class="active"'; ?> ><a href="?route=servers/manage-windows&id=<?php echo $server['id']; ?>&section=remote"><i class="fa fa-terminal"></i> <?php _e('Remote Control'); ?></a></li>
+						<?php } ?>
+
 						<div class="btn-group pull-right" style="padding:6px;">
 							<?php if ($section == "alerting") { ?>
 								<a data-toggle='tooltip' title='Add Alert' class="btn btn-primary btn-flat btn-sm " href="#" onClick='showM("?modal=serveralerts/add&reroute=servers/manage-windows&routeid=<?php echo $server['id']; ?>");return false'><i class="fa fa-plus"></i> ADD ALERT</a>
@@ -944,6 +948,179 @@
 						</div>
 						<!-- /.tab-pane -->
 
+
+						<?php if(in_array("remoteControl",$perms)) { ?>
+						<!-- tab-pane: Remote Control -->
+						<div class="tab-pane <?php if ($section == "remote") echo 'active'; ?>" id="remote">
+							<div class='row'>
+								<div class='col-md-12'>
+									<div class="box box-primary">
+										<div class="box-header with-border">
+											<h3 class="box-title"><i class="fa fa-terminal"></i> <?php _e('Remote Command'); ?> - <?php _e('Windows'); ?></h3>
+									</div>
+									<div class="box-body">
+										<div class="form-group">
+											<label><?php _e('PowerShell Command'); ?></label>
+											<div class="input-group">
+												<span class="input-group-addon">PS&gt;</span>
+												<input type="text" id="remote-command" class="form-control" placeholder="<?php _e('Enter PowerShell command...'); ?>" onkeypress="if(event.keyCode==13) sendRemoteCommand()">
+												<span class="input-group-btn">
+													<button type="button" class="btn btn-primary" onclick="sendRemoteCommand()"><i class="fa fa-paper-plane"></i> <?php _e('Send'); ?></button>
+												</span>
+											</div>
+										</div>
+										<div class="form-group">
+											<label><?php _e('Quick Commands'); ?></label>
+											<div>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-Date')">Get-Date</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-Disk')">Get-Disk</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-Volume')">Get-Volume</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-Process | Sort-Object CPU -Descending | Select-Object -First 15')">Top Processes</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-Service | Where-Object {$_.Status -eq "Running"}')">Running Services</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-NetAdapter')">Net Adapters</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-NetIPAddress')">IP Addresses</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Test-Connection google.com -Count 2')">Ping</button>
+												<button type="button" class="btn btn-default btn-sm" onclick="setCommand('Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10')">Recent Updates</button>
+											</div>
+										</div>
+										<div id="remote-output" style="display:none;">
+											<label><?php _e('Output'); ?></label>
+											<pre id="remote-output-content" style="max-height:500px;overflow:auto;background:#1a1a2e;color:#e0e0e0;padding:15px;border-radius:4px;font-size:13px;"></pre>
+										</div>
+									</div>
+								</div>
+
+									<div class="box box-primary">
+										<div class="box-header with-border">
+											<h3 class="box-title"><i class="fa fa-history"></i> <?php _e('Command History'); ?></h3>
+											<div class="box-tools pull-right">
+												<button type="button" class="btn btn-box-tool" onclick="loadCommandHistory()"><i class="fa fa-refresh"></i></button>
+											</div>
+										</div>
+										<div class="box-body">
+											<div class="table-responsive">
+												<table id="remoteHistoryTable" class="table table-striped table-hover table-bordered">
+													<thead>
+														<tr>
+															<th><?php _e('ID'); ?></th>
+															<th><?php _e('Command'); ?></th>
+															<th><?php _e('User'); ?></th>
+															<th><?php _e('Status'); ?></th>
+															<th><?php _e('Time'); ?></th>
+															<th><?php _e('Action'); ?></th>
+														</tr>
+													</thead>
+													<tbody id="remote-history-body">
+													</tbody>
+											</table>
+										</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+<script>
+function setCommand(cmd) {
+	$('#remote-command').val(cmd);
+}
+
+function sendRemoteCommand() {
+	var command = $('#remote-command').val();
+	if (!command) { return; }
+	
+	$.ajax({
+		url: '?controller=remote&action=send',
+		method: 'POST',
+		data: {
+			server_id: <?php echo $server['id']; ?>,
+			command: command
+		},
+		dataType: 'json',
+		success: function(response) {
+			if (response.success) {
+				$('#remote-output').show();
+				$('#remote-output-content').html('<i class="fa fa-spinner fa-spin"></i> ' + '<?php _e('Sending command...'); ?>');
+				pollCommandResult(response.command_id);
+			} else {
+				$('#remote-output').show();
+				$('#remote-output-content').html('<span class="text-red">Error: ' + response.error + '</span>');
+			}
+		}
+	});
+}
+
+function pollCommandResult(cmdId) {
+	$.ajax({
+		url: '?controller=remote&action=result&id=' + cmdId,
+		method: 'GET',
+		dataType: 'json',
+		success: function(response) {
+			if (response.status === 'completed') {
+				var output = atob(response.output || '');
+				var exitCode = response.exit_code;
+				var color = exitCode == 0 ? '#00ff00' : '#ff6666';
+				$('#remote-output-content').html(
+					'<span style="color:#66ff66">PS> ' + $('#remote-command').val() + '</span>\n' +
+					'<span style="color:' + color + '">Exit Code: ' + exitCode + '</span>\n\n' +
+					'<pre style="background:transparent;color:#e0e0e0;margin:0;padding:0;">' + output + '</pre>'
+				);
+			} else if (response.status === 'failed') {
+				$('#remote-output-content').html('<span class="text-red">Command failed</span>');
+			} else {
+				setTimeout(function() { pollCommandResult(cmdId); }, 2000);
+			}
+		}
+	});
+}
+
+function loadCommandHistory() {
+	$.ajax({
+		url: '?controller=remote&action=list&server_id=<?php echo $server['id']; ?>',
+		method: 'GET',
+		dataType: 'json',
+		success: function(data) {
+			var html = '';
+			for (var i = 0; i < data.length; i++) {
+				var cmd = data[i];
+				var statusClass = cmd.status == 'completed' ? 'label-success' : (cmd.status == 'failed' ? 'label-danger' : 'label-warning');
+				html += '<tr>';
+				 html += '<td>' + cmd.id + '</td>';
+				 html += '<td><code>' + cmd.command + '</code></td>';
+				 html += '<td>' + cmd.user_name + '</td>';
+				 html += '<td><span class="label ' + statusClass + '">' + cmd.status + '</span></td>';
+				 html += '<td>' + cmd.created_at + '</td>';
+				 html += '<td><button class="btn btn-xs btn-info" onclick="viewCommandResult(' + cmd.id + ')"><i class="fa fa-eye"></i></button></td>';
+				 html += '</tr>';
+			}
+			$('#remote-history-body').html(html);
+		}
+	});
+}
+
+function viewCommandResult(cmdId) {
+	$.ajax({
+		url: '?controller=remote&action=result&id=' + cmdId,
+		method: 'GET',
+		dataType: 'json',
+		success: function(response) {
+			var output = response.output ? atob(response.output) : 'No output';
+			$('#remote-output').show();
+			$('#remote-output-content').html(
+				'<span style="color:#66ff66">PS> ' + response.command + '</span>\n' +
+				'<span>Exit Code: ' + response.exit_code + '</span>\n' +
+				'<span>Executed: ' + response.executed_at + '</span>\n\n' +
+				'<pre style="background:transparent;color:#e0e0e0;margin:0;padding:0;">' + output + '</pre>'
+			);
+		}
+	});
+}
+
+$(document).ready(function() {
+	loadCommandHistory();
+});
+</script>
+
+						<?php } ?>
 
                     </div><!-- /.tab-content -->
                 </div><!-- nav-tabs-custom -->
